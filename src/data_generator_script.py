@@ -70,7 +70,7 @@ if not os.path.exists(exp_folder):
 ## ------- processed data -------
 def generate_XY(data,folder_and_prefix,i=""):
     # try:
-    X,Y = mr.prepare_data(data,deltas=False, change_img_base=['/home/arthur/image_dataset/','/home/arthur/data/image_dataset//'],output_forces=forces_only, text_only= text_only)
+    X,Y = mr.prepare_data(data,deltas=False, change_img_base=['/home/arthur/image_dataset/','/home/arthur/data/image_dataset/'],output_forces=forces_only, text_only= text_only)
     print(i,"X: ",X.shape)
     print(i,"Y: ",Y.shape)
     print(i,"DONE computing embeddings")

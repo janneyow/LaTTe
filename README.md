@@ -3,8 +3,6 @@
 <video width="100%" controls>
   <source src="./docs/media/ICRA2023_LaTTe_low.mp4" type="video/mp4"/>
 </video>
-<!-- ![iterative NL interactions over a trajectory](./docs/media/interactions.gif)
--->
 
 
 ## setup

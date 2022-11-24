@@ -16,8 +16,19 @@ CHANGE_WEIGHT = 100.0
 #   Sharpness / smoothness: make sharper/smoother/open/close turns/curves (8)
 
 
-def repel(pts_raw,args, s=1.0,p=None,w=1.0):
+def repel(pts_raw, args, s=1.0, p=None, w=1.0):
+    """Calculates the force exerted on each waypoint based on locality factor, sign, object pose and weight
 
+    Args:
+        pts_raw ([float]): original waypoints
+        args (dict): {"max_r": locality factor}. Contains the locality factor to deform the trajectory
+        s (float, optional): Sign - +ve if stay away; -ve if stay closer. Defaults to 1.0.
+        p ([float], optional): Object waypoint. Populated in `next_label()` function during initialization. Defaults to None.
+        w (float, optional): Weight of the feature. Populated in `next_label()` function during initialization. Defaults to 1.0.
+
+    Returns:
+        _type_: _description_
+    """
 
     MAX_REP_R = 0.6
     
@@ -27,19 +38,25 @@ def repel(pts_raw,args, s=1.0,p=None,w=1.0):
     MIN_REP_R = 0.05 
     base_w = 0.005
 
+    # Get distance and direction vector to object (p) for each waypoint
     pts = pts_raw[:,:3]
-    diff = pts-p
-
-    dist = np.expand_dims(np.linalg.norm(diff,axis=1),-1)
+    diff = pts - p  
+    dist = np.expand_dims(np.linalg.norm(diff, axis=1), -1)
     dir = np.divide(diff, dist, out=np.zeros_like(diff), where=dist!=0)
 
+    # Get force at each waypoint 
+    # force = (-1/2 * MAX_REP_R) / MAX_REP_R if (dist btwn MIN_REP_R and MAX_REP_R)
+    # more intuitively, force = -0.5 (move further away), force = 0.5 (move closer), force = 0 (out of range)
 
     # f = np.divide(-s*(MAX_REP_R-dist), MAX_REP_R, out=np.zeros_like(dist), where=dist<MAX_REP_R)
-    f = np.divide(-s*(MAX_REP_R/2), MAX_REP_R, out=np.zeros_like(dist), where=(dist>MIN_REP_R)&(dist<MAX_REP_R))
+    f = np.divide(-s * (MAX_REP_R/2), MAX_REP_R, out=np.zeros_like(dist), where=(dist>MIN_REP_R)&(dist<MAX_REP_R))
 
     F = np.zeros_like(pts_raw)
-    F[:,:3] = dir*f*w*base_w
-
+    F[:,:3] = dir * f * w * base_w
+    # print(" w:", w, " base_w:", base_w)
+    # print("Dir:", dir[0])
+    # print("f:", f[0])
+    # print("F:", F[0]) 
     return F
 
 
@@ -133,20 +150,20 @@ def get_map_cost(f_list):
         if isinstance(f, dict):
             for k, v in f.items():
                 keys[k] = v
-    def map_cost(pt,a):
+    def map_cost(pt, a):
         cost = 1.0
         for f in f_list:
-            
+            # print("f:", f)
             if isinstance(f, tuple): # function and value pair
 
                 args = [f[1]]
                 if len(f)>2:
-                    args+=[keys[k] for k in f[2] if k in keys.keys()]
-                    # print(f[2])
+                    args += [keys[k] for k in f[2] if k in keys.keys()]
+                    # print(f[2]) # features in dictionary (ie object pose, weight)
                     # print('keys: ',[k for k in f[2] if k in keys.keys()])
                     # print('args: ',args)
-                cost *= f[0](pt,a,*args)
-        return cost*CHANGE_WEIGHT
+                cost *= f[0](pt, a, *args)  # pt: waypts, a: {'max_r': locality_factor}, args = [s, obj_p, w]
+        return cost * CHANGE_WEIGHT
     return map_cost
 
 
@@ -287,15 +304,15 @@ class Label_generator:
                 self.force_spatial_dep[k]["after"] = self.objs
         self.labels = []
         
-    def generate_labels(self,change_names, shuffle=True):
+    def generate_labels(self, change_names, shuffle=True):
         j = 0
 
         self.labels = []
         for c in change_names:
-            for i,f in self.next_label(self.change_type[c], new=True):   
-                # print("\n")
-                # print(i)
-                # print("=====> ",i, " --- ",f)
+            for i, f in self.next_label(self.change_type[c], new=True):   
+                print("\n")
+                print(i)
+                print("=====> ",i, " --- ",f)
                 map_cost = get_map_cost(f)
                 
                 self.labels.append([i,map_cost])
@@ -305,16 +322,27 @@ class Label_generator:
     def sample_labels(self, n):
         return random.sample(self.labels, k=n)
 
-    def next_label(self, p, func_list = [], new = False): #all the combinations of labels
-        if new: func_list = []
+    def next_label(self, p, func_list = [], new = False):
+        """Creates the text label and populates the feature/force function
+
+        Args:
+            p (_type_): _description_
+            func_list (list, optional): _description_. Defaults to [].
+            new (bool, optional): _description_. Defaults to False.
+
+        Yields:
+            _type_: _description_
+        """
+        if new: 
+            func_list = []
         # global i 
         # print(i)
         # i += 1
         # print(p)
         text = ""
         
-        if isinstance(p, tuple) and len(p)>0: # sequence of items
-            for p1,f1 in self.next_label(p[0],func_list=func_list):
+        if isinstance(p, tuple) and len(p) > 0: # sequence of items
+            for p1,f1 in self.next_label(p[0], func_list=func_list):
                 for p2,f2 in self.next_label(p[1], func_list=func_list):
                     f = []
                     if f1: f += f1
@@ -327,20 +355,20 @@ class Label_generator:
                 yield (i,None)
 
         elif isinstance(p, dict):
-
-            for c_text,c_value in p.items():
+            # c_text is the object
+            # c_value contains object pose and class
+            for c_text, c_value in p.items():
             # c_text,c_value  = random.choice(list(p.items()))
                 b_gen = [("",None)]
                 if "before" in c_value.keys() and len(c_value["before"])>0:
                     b_gen = self.next_label(c_value["before"],func_list=func_list)
 
-                for b,fb in b_gen:
-                    text = b+c_text
+                for b, fb in b_gen:
+                    text = b + c_text
                     a_gen = [("",None)]
                     if "after" in c_value.keys() and len(c_value["after"])>0:
                         a_gen = self.next_label(c_value["after"], func_list=func_list)
-                    for a,fa in a_gen:
-
+                    for a, fa in a_gen:
                         fl = []
                         if fb: fl+=fb
                         if fa: fl+=fa
@@ -349,7 +377,6 @@ class Label_generator:
                             fl.append(c_value["func"])
                         elif "value" in c_value.keys():
                             fl.append(c_value["value"])
-                        
                         yield (text + a, fl)
 
 f_list = []

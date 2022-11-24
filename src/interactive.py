@@ -41,14 +41,14 @@ parser.add_argument('--ros', type=int, default=1)
 parser.add_argument('--name', type=str, default="user")
 parser.add_argument('--trial', type=int, default=1)
 
-parser.add_argument('--model_path', type=str, default=models_folder+"lr_decay/")
+parser.add_argument('--model_path', type=str, default="/home/janne/ros_ws/latte/src/models/")
 parser.add_argument('--model_name', type=str,
     default="TF-num_layers_enc:1-num_layers_dec:5-d_model:400-dff:512-num_heads:8-dropout_rate:0.1-wp_d:4-num_emb_vec:4-bs:16-dense_n:512-num_dense:3-concat_emb:True-features_n:793-optimizer:adam-norm_layer:True-activation:tanh.h5")
 
     # default="refined_refined_TF&num_layers_enc:2&num_layers_dec:4&d_model:256&dff:512&num_heads:8&dropout_rate:0.1&wp_d:2&bs:64&dense_n:512&num_dense:3&concat_emb:True&features_n:777&optimizer:RMSprop&norm_layer:True&activation:tanh.h5")
 
 
-parser.add_argument('--load_models', type=int, default=0)
+parser.add_argument('--load_models', type=int, default=1)
 
 parser.add_argument('--live_image', type=int, default=0)
 parser.add_argument('--image_topic', type=str, default="/camera/image_raw")
@@ -69,6 +69,7 @@ print("ros_enabled",ros_enabled)
 
 
 if ros_enabled:
+    import rospy
     from nav_msgs.msg import Path
     from sensor_msgs.msg import Image
     from geometry_msgs.msg import PoseStamped
@@ -81,7 +82,6 @@ if ros_enabled:
     except:
         pass
 
-    import rospy
 
 
 chomp_trajs_path = args.chomp_trajs_path
@@ -407,11 +407,13 @@ def publish_real_traj(traj, pub, dt=0.1, scale = 1.0):
     print("done")
 
 
-def publish_simple_traj(traj,objs, pub, scale=1.0, frame_id="panda_link0", append_objs=False):
+def publish_simple_traj(traj, objs, pub, scale=1.0, frame_id="map", append_objs=False):
     msg = Path()
     msg.header.frame_id = frame_id
     msg.header.stamp = rospy.Time.now()
     
+    #TODO: publish object poses
+
     print(objs.shape,traj.shape)
     if append_objs:
         wps = np.concatenate([objs,traj],axis=0)
@@ -618,14 +620,14 @@ print_help()
 
 if ros_enabled:
     rospy.init_node('draw_interface', anonymous=True)
-traj_pub = rospy.Publisher("/traj", Path)
+    traj_pub = rospy.Publisher("/traj", Path)
 
-real_traj_topic = "/cartesian_impedance_example_controller/equilibrium_pose"
-real_traj_pub = rospy.Publisher(real_traj_topic, PoseStamped)
+    real_traj_topic = "/cartesian_impedance_example_controller/equilibrium_pose"
+    real_traj_pub = rospy.Publisher(real_traj_topic, PoseStamped)
 
-new_traj_pub = rospy.Publisher("/new_traj", Path)
+    new_traj_pub = rospy.Publisher("/new_traj", Path)
 
-objs_pub = rospy.Publisher("/obj_poses", Path)
+    objs_pub = rospy.Publisher("/obj_poses", Path)
 
 
 if live_image:
@@ -636,7 +638,8 @@ if live_image:
     # bbox_sub = rospy.Subscriber("/franka_state_controller/franka_states",  FrankaState, franka_state_cb, di)
 
 
-while not rospy.is_shutdown():
+# while not rospy.is_shutdown():
+while True:
     if live_image:
         data = rospy.wait_for_message(image_topic, Image)
         try:
@@ -662,7 +665,6 @@ while not rospy.is_shutdown():
     # modify_traj(mr, di)
     # traj, obj_poses, text, obj_names,obj_poses_offset = di.get_env()
     # publish_simple_traj(di.new_traj,obj_poses+obj_poses_offset, new_traj_pub, scale=1.0)
-    print(" ")
     if k == 27:
         break
     elif k == ord("d"):
@@ -696,7 +698,6 @@ while not rospy.is_shutdown():
         traj, obj_poses, text, obj_names,obj_poses_offset = di.get_env()
         publish_simple_traj(di.new_traj,obj_poses+obj_poses_offset, new_traj_pub, scale=1.0)
 
-
         print("traj and objs published")
 
     elif k == ord("p"):
@@ -727,6 +728,8 @@ while not rospy.is_shutdown():
     elif k == ord("o"):
         di.reload_traj()
         di.redraw()
+        traj, obj_poses, text, obj_names,obj_poses_offset = di.get_env()
+        publish_simple_traj(traj,obj_poses+obj_poses_offset, traj_pub, scale=1.0)
 
     elif k == ord("n"):
         di.placing_objs = False
