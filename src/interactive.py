@@ -638,8 +638,7 @@ if live_image:
     # bbox_sub = rospy.Subscriber("/franka_state_controller/franka_states",  FrankaState, franka_state_cb, di)
 
 
-# while not rospy.is_shutdown():
-while True:
+while (ros_enabled and not rospy.is_shutdown()) or (not ros_enabled):
     if live_image:
         data = rospy.wait_for_message(image_topic, Image)
         try:
@@ -665,6 +664,7 @@ while True:
     # modify_traj(mr, di)
     # traj, obj_poses, text, obj_names,obj_poses_offset = di.get_env()
     # publish_simple_traj(di.new_traj,obj_poses+obj_poses_offset, new_traj_pub, scale=1.0)
+    # print(" ")
     if k == 27:
         break
     elif k == ord("d"):
