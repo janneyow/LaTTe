@@ -19,7 +19,7 @@ Install CLIP + opencv
 ```
 pip install ftfy regex tqdm dqrobotics rospkg similaritymeasures
 pip install git+https://github.com/openai/CLIP.git
-pip install opencv-python
+pip install opencv-python==4.1.2.30   
 ```
 
 

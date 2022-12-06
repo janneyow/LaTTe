@@ -116,7 +116,7 @@ class DataGenerator():
                 ax = fig.add_subplot(1,1,1, projection='3d')
                 # ax2 = fig.add_subplot(7,1,7)
                 # plot initial traj
-                ax.plot(pts[:,0], pts[:,1], pts[:,2]) 
+                ax.plot(pts[:,0], pts[:,1], pts[:,2], color="blue") 
                 ax.plot(pts_new[:,0], pts_new[:,1], pts_new[:,2], color="red")
                 # print(obj_names, obj_pt)
                 for idx, pt in enumerate(obj_pt):
@@ -244,9 +244,9 @@ class DataGenerator():
 
         # Applying force. Magnitude of change affected by range of for loop??
         # TODO: what is the point of this for loop? affects the points?
-        # for i in range(1000):
-        for i in range(2):
-            print("--------------%d----------------------"%i)
+        for i in range(1000):
+        # for i in range(2):
+            # print("--------------%d----------------------"%i)
             wps = pts[:,:3]
             wp_diff = wps[1:] - wps[:-1]
             wp_dist = np.expand_dims(np.linalg.norm(wp_diff, axis=1),-1)
@@ -287,7 +287,7 @@ class DataGenerator():
 
             args = {"max_r": locality_factor}
             for func in map_cost_f:
-                print("locality factor:", args["max_r"])
+                # print("locality factor:", args["max_r"])
                 # if distance change, `repel` function used
                 # gets distance and direction vector btwn each waypt and object pose
                 # f = 0.5, -0.5 or 0
@@ -322,7 +322,7 @@ if __name__ == "__main__":
 
     # Note weights in change_types (1, 1, 1) in this case affects how likely the change type is selected
     # change_types = {'dist':1, 'cartesian':1, 'speed':1}
-    change_types = {'dist': 1}
+    change_types = {'cartesian': 1}
     dg = DataGenerator(change_types, obj_library_file)
     data = dg.generate(2, 4, [10, 20], [5, 8], plot=True)
     # print(len(data))

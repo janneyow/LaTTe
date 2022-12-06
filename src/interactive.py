@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Need to view traj with RVIZ
+# TODO: publish object locations
+# trajectory corrections don't seem to work very well
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -195,6 +199,7 @@ class Drawing_interface():
     def reload_traj(self):
         self.traj = interpolate_traj(self.base_wp,traj_n=traj_n)
         self.new_traj = self.traj.copy()
+        print(self.new_traj)
 
     def event_cb(self, event, x, y, flags, param):
 
@@ -493,7 +498,7 @@ def rescale(pts_, factor_list):
     return pts_new
 
 
-def modify_traj(mr, di, show=False):
+def modify_traj(mr, di, show=True):
     traj, obj_poses, text, obj_names,obj_poses_offset = di.get_env()
 
     images = None
@@ -516,7 +521,7 @@ def modify_traj(mr, di, show=False):
     if show:
         data_array = np.array([d])
         show_data4D(data_array, pred=pred, color_traj=False)
-    # 
+
     traj_new = rescale(pred[0], factor_list)
 
     publish_simple_traj(traj_new,obj_poses+obj_poses_offset,new_traj_pub)

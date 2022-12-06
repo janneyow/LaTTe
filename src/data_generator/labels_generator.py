@@ -69,8 +69,11 @@ def cartesian_grad(pts_raw,args,dir=[1.0,0.0,0,0],w = 0.01):
     d = np.ones_like(pts)*dir
     F = np.zeros_like(pts_raw)
     F[:,:3] = d*f*w*base_w
+    print("direction:", dir)
+    print(F)
     return F
 
+    
 def force_cartesian_grad(pts_raw,args,dir=[1.0,0.0,0,0],s = 1.0):
    
     pts = pts_raw[:,:3]

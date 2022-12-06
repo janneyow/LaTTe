@@ -144,6 +144,7 @@ class Motion_refiner():
     def load_CLIP(self, verbose=0):
 
         # self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        # TODO: using cpu since cuda runs out of memory
         self.device = "cpu"
         model, preprocess = clip.load('ViT-B/32', self.device)
 
