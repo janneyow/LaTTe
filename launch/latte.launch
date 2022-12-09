@@ -2,8 +2,8 @@
 <launch>
     <rosparam command="load" file="$(find latte)/config/latte.yaml" />
     
-    <node name="latte_trial" pkg="latte" type="latte_trial.py" output="screen"/>
+    <node name="latte_trial" pkg="latte" type="latte_server.py" output="screen"/>
     
-    <node type="rviz" name="rviz_latte" pkg="rviz" args="-d $(find latte)/rviz/traj_viewer.rviz" />
+    <!-- <node type="rviz" name="rviz_latte" pkg="rviz" args="-d $(find latte)/rviz/traj_viewer.rviz" /> -->
 
 </launch>

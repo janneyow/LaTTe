@@ -13,18 +13,8 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 import warnings
-try:
-    from motion_refiner.src.functions import *
-except:
-    try:
-        from src.functions import *
-        from src.config import *
-
-    except:
-        from functions import *
-        from config import *
-
-
+from latte.functions import *
+from latte.config_old import *
 
 warnings.filterwarnings('ignore')
 

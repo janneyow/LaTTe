@@ -1,3 +1,4 @@
+# Should not use this file!! Use yaml file instead!
 seed = 42
 dataset_name = "latte_100k_lf"
 # dataset_name = "4D_100k_scaping_factor"

@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   lang_corr_msgs
 )
 
+catkin_python_setup()
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES latte
