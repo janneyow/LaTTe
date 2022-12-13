@@ -22,6 +22,7 @@ from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 from lang_corr_msgs.srv import GetEnvObj, LatteDeformTraj, LatteDeformTrajResponse
+from lang_corr_msgs.srv import GetFeaturesFromLanguage, GetFeaturesFromLanguageRequest
 
 NUM_WAYPTS = 20
 
@@ -101,6 +102,16 @@ class LatteServer():
         print("TODO. Get image from camera feed.")
         self.img = cv2.imread(self.img_file)
 
+    def get_most_similar_text(self, text):
+        try:
+            client_get_features = rospy.ServiceProxy("get_features_from_language", GetFeaturesFromLanguage)
+            resp = client_get_features(text)
+            text = resp.feature
+            if resp.confidence < 0.6:
+                rospy.logwarn("Confidence less than 0.6 : %f" %resp.confidence)
+            return text        
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s"%e)
 
     def latte_deform_cb(self, req):
         rospy.loginfo("Received service request to deform trajectory with '%s'"%req.correction)
@@ -113,9 +124,18 @@ class LatteServer():
 
         assert self.traj_initial.shape[1] == 4
 
-        # self.traj_initial = need to convert to np.array
-        self.text = req.correction
+        # If modified version, find closest text embeddings first
+        if req.modified:
+            rospy.loginfo("Requesting most similar sentence...")
+            try:
+                self.text = self.get_most_similar_text(req.correction)
+            
+            except:
+                rospy.logerr("Getting most similar text failed")
 
+        else:
+            self.text = req.correction
+            
         # cannot set show=True here, qt only works in main thread
         self.traj_deformed = self.modify_traj(self.mr)
         res = LatteDeformTrajResponse()
@@ -314,19 +334,53 @@ class LatteServer():
 
         return t_new, o_new, [pts_norm, (pts_max-pts_min)/2, vel_norm, (vel_max-vel_min)/2, margin]
             
+def print_help():
+    print("""
+    -------------------Keyboard Commands------------------------
+    q: Quit 
+    h: Print help
+    r: Reset to initial seed trajectory
+    m: Toggle between Latte and Modified-Latte
 
+    Otherwise, key in command.
+    -----------------------------------------------------------
+    
+    """)
 if __name__ == "__main__":
-    rospy.init_node('latte_trial', anonymous=True)
+    rospy.init_node('latte_server', anonymous=True)
 
     ls = LatteServer()
     rospy.loginfo("Initialized latte server")
     # rospy.spin()
 
+    # this doesn't affect server, only the test script below
+    mod_latte = True
+    
     while not rospy.is_shutdown():
-        ls.text = input("Key in command:")
+        cmd = input("Key in command:")
 
-        if ls.text == "q":
+        if cmd == "q":
             exit()
+        elif cmd == "r":
+            ls.traj_initial = None
+            print("Resetting trajectory")
+            # reset base trajectory
+            continue
+        elif cmd == "h":
+            print_help()
+            continue
+        elif cmd == "m":
+            mod_latte = not mod_latte
+            print("Using mod_latte:", mod_latte)
+            continue
+        elif cmd == "":
+            continue
+        
+        print("Received command:", cmd)
+        if mod_latte:
+            ls.text = ls.get_most_similar_text(cmd)
+        else:
+            ls.text = cmd
 
         new_traj = ls.modify_traj(ls.mr, show=True)
 
