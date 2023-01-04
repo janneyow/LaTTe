@@ -18,10 +18,12 @@ from latte.TF4D_mult_features import *
 
 import rospy
 import rospkg
+from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
-from lang_corr_msgs.srv import GetEnvObj, LatteDeformTraj, LatteDeformTrajResponse
+from lang_corr_msgs.srv import GetEnvObj, GetEnvImage
+from lang_corr_msgs.srv import LatteDeformTraj, LatteDeformTrajResponse
 from lang_corr_msgs.srv import GetFeaturesFromLanguage, GetFeaturesFromLanguageRequest
 
 NUM_WAYPTS = 20
@@ -33,8 +35,10 @@ class LatteServer():
         self.img = None
         self.load_parameters()
         self.get_env_obj()
+
+        self.bridge = CvBridge()
         if self.img is None:
-            self.get_img()
+            self.img = self.get_img()
 
     def load_parameters(self):
         rospack = rospkg.RosPack()
@@ -99,8 +103,22 @@ class LatteServer():
         self.object_bboxes = np.array(self.object_bboxes)
 
     def get_img(self):
-        print("TODO. Get image from camera feed.")
-        self.img = cv2.imread(self.img_file)
+        try:
+            rospy.wait_for_service("get_env_image")
+            srv = rospy.ServiceProxy("get_env_image", GetEnvImage)
+            resp = srv()
+            msg_img = resp.image
+            # convert image to numpy
+            image = self.bridge.imgmsg_to_cv2(msg_img, desired_encoding="passthrough")
+            cv2.imshow("color image", image)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+            return image
+
+        except rospy.ServiceException as e:
+            rospy.logerr(f"Service call failed: {e} Using image from file!")
+            return cv2.imread(self.img_file)
+        
 
     def get_most_similar_text(self, text):
         try:
