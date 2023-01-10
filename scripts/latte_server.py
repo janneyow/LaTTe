@@ -110,9 +110,7 @@ class LatteServer():
             msg_img = resp.image
             # convert image to numpy
             image = self.bridge.imgmsg_to_cv2(msg_img, desired_encoding="passthrough")
-            cv2.imshow("color image", image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+
             return image
 
         except rospy.ServiceException as e:
@@ -248,10 +246,10 @@ class LatteServer():
         images = None
         if self.use_images:
             images = self.get_img_crops()
-            # for img in images:
-            #     cv2.imshow('cropped', img)
-            #     cv2.waitKey(0)
-            #     cv2.destroyAllWindows()
+            for img in images:
+                cv2.imshow('cropped', img)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
         # Apply deformation
         # traj_in is the decoded trajectory input
@@ -375,7 +373,7 @@ if __name__ == "__main__":
     mod_latte = True
     
     while not rospy.is_shutdown():
-        cmd = input("Key in command:")
+        cmd = input("Key in command: ")
 
         if cmd == "q":
             exit()
@@ -389,17 +387,20 @@ if __name__ == "__main__":
             continue
         elif cmd == "m":
             mod_latte = not mod_latte
-            print("Using mod_latte:", mod_latte)
+            rospy.loginfo("Using mod_latte:", mod_latte)
             continue
         elif cmd == "":
             continue
         
-        print("Received command:", cmd)
+        print(f"Received command: {cmd}")
         if mod_latte:
             ls.text = ls.get_most_similar_text(cmd)
+            if ls.text is None:
+                ls.text = cmd
+                rospy.logerr("Modded LaTTe not available, please launch sen_sim. Reverting to normal LaTTe")
         else:
             ls.text = cmd
-
+        
         new_traj = ls.modify_traj(ls.mr, show=True)
 
         # update traj

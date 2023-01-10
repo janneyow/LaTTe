@@ -8,7 +8,6 @@ setup:
   # model_name: "refined_refined_TF&num_layers_enc:2&num_layers_dec:4&d_model:256&dff:512&num_heads:8&dropout_rate:0.1&wp_d:2&bs:64&dense_n:512&num_dense:3&concat_emb:True&features_n:777&optimizer:RMSprop&norm_layer:True&activation:tanh.h5"
   load_models: 1
   live_image: 0
-  image_topic: "/camera/color/image_raw"
   img_file: "/docs/media/rgb_img.png"
   user_trajs_path: "/user_trajs/"
   chomp_trajs_path: "/chomp_trajs/"
