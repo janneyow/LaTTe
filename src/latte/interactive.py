@@ -4,6 +4,8 @@
 # TODO: publish object locations
 # trajectory corrections don't seem to work very well
 
+# OUTDATED SCRIPT. PLEASE USE LATTE SERVER INSTEAD
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -78,7 +80,7 @@ if ros_enabled:
     from sensor_msgs.msg import Image
     from geometry_msgs.msg import PoseStamped
     from visualization_msgs.msg import Marker, MarkerArray
-    from darknet_ros_msgs.msg import BoundingBoxes, BoundingBox
+    # from darknet_ros_msgs.msg import BoundingBoxes, BoundingBox
 
 
     try:
@@ -140,10 +142,11 @@ class Drawing_interface():
         # text = "go to the bottom"                      #cartesian
         # self.text = "fly slower when next to the table"       #speed
         # self.text = "stay furthe away from the cup"       #speed
-        self.text = " "       #speed
+        # self.text = " "       #speed
+        self.text = "stay further away from plant"
 
 
-
+        traj_n = 40
         self.traj = interpolate_traj(self.base_wp,traj_n=traj_n)
         self.new_traj = self.traj.copy()
 
@@ -151,8 +154,6 @@ class Drawing_interface():
         self.points = []
         self.simple_traj = []
         self.last_trajs = []
-
-        print("di init",ros_enabled)
 
         cv2.namedWindow(winname="Motion refiner")
         cv2.setMouseCallback("Motion refiner",
@@ -197,6 +198,7 @@ class Drawing_interface():
         self.draw_traj(self.new_traj, self.new_traj_color)
 
     def reload_traj(self):
+        traj_n = 40
         self.traj = interpolate_traj(self.base_wp,traj_n=traj_n)
         self.new_traj = self.traj.copy()
         print(self.new_traj)
@@ -307,6 +309,8 @@ class Drawing_interface():
         print("text updated")
 
     def set_image(self, cv_image):
+        print("setting image")
+        assert cv_image is not None, "Cv image is none"
         self.base_img = cv_image
         di.redraw()
 
