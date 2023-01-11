@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from scipy.spatial.transform import Rotation as R
 
 import numpy as np
 import json
@@ -24,7 +25,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 from lang_corr_msgs.srv import GetEnvObj, GetEnvImage
 from lang_corr_msgs.srv import LatteDeformTraj, LatteDeformTrajResponse
-from lang_corr_msgs.srv import GetFeaturesFromLanguage, GetFeaturesFromLanguageRequest
+from lang_corr_msgs.srv import GetFeaturesFromLanguage
 
 NUM_WAYPTS = 20
 
@@ -98,6 +99,8 @@ class LatteServer():
             self.object_bboxes.append([1157, 1205, 473, 580])
             self.object_bboxes.append([1009, 1208, 297, 500])
             print("Objects:", self.object_names)
+
+            # self.object_poses = np.array([[0.5,0.2,0.0,0],[0.3,-0.5,0,0],[0.5,1,0.2,0]])
 
         self.object_poses = np.array(self.object_poses)
         self.object_bboxes = np.array(self.object_bboxes)
@@ -219,16 +222,10 @@ class LatteServer():
                                      [ 0.68129182, -0.18322225,  0.3178001 ,  0.  ],
                                      [ 0.6515286 , -0.26978496,  0.2616998 ,  0.  ],
                                      [ 0.59999996, -0.35000017,  0.19999978,  0.  ]])
+
+            # self.base_wp = np.array([[0,0,0,0.3],[0.5,0.5,0,0.1],[1,1,0.3,0.0],[1.5,1.5,0.2,0.1],[0.5,1.7,0.1,0.2]])
+
             # self.base_wp = np.array([[0,0,0,0.3],[0.2,-0.25,0,0.1],[0.2,-0.5,0.0,0.0],[0.1,-0.75,0.1,0.1],[0.0,-1.0,0.1,0.2]])
-
-            # # add starting point
-            # offset = np.array([0.0, 0.0, 0.0, 0.0])
-            # self.base_wp = self.base_wp + offset
-            
-            # self.base_wp = self.base_wp / 1.0     # -> shouldn't make a diff?
-
-            # init_pose =  np.array([0.382723920642, 0.5, 0.05, 0])
-            # self.base_wp = self.base_wp + init_pose     # transform entire initial traj by the offset?
 
             self.traj_initial = self.interpolate_traj(self.base_wp, traj_n = NUM_WAYPTS).copy()
         
@@ -246,10 +243,10 @@ class LatteServer():
         images = None
         if self.use_images:
             images = self.get_img_crops()
-            for img in images:
-                cv2.imshow('cropped', img)
-                cv2.waitKey(0)
-                cv2.destroyAllWindows()
+            # for img in images:
+            #     cv2.imshow('cropped', img)
+            #     cv2.waitKey(0)
+            #     cv2.destroyAllWindows()
 
         # Apply deformation
         # traj_in is the decoded trajectory input
@@ -302,14 +299,27 @@ class LatteServer():
         vel = pts_[:,3:]
         pts = pts_[:,:3]
 
-        pts_norm, pts_avr,vel_norm, vel_avr, margin = factor_list
-        pts = pts/(1-margin)*pts_norm+pts_avr
-        vel = vel/(1-margin)*vel_norm+vel_avr
+        pts_norm, pts_min, vel_norm, vel_min, margin, rotation_degrees, rotation_axis = factor_list
+
+        rotation_radians = np.radians(rotation_degrees)
+        rotation_vector = -rotation_radians * rotation_axis
+        rotation = R.from_rotvec(rotation_vector)
+
+        pts = (pts + 0.5 - margin / 2) / (1 - margin) * pts_norm + pts_min 
+        if vel_norm > 1e-10:
+            vel = (vel + 0.5 - margin / 2) / (1 - margin) * vel_norm + vel_min
+        else:
+            vel = vel + vel_min
+
+        # pts = pts/(1-margin)*pts_norm+pts_avr
+        # vel = vel/(1-margin)*vel_norm+vel_avr
+        pts = rotation.apply(pts)
+
         pts_new= np.concatenate([pts,vel],axis=-1)
 
         return pts_new
 
-    def norm_traj_and_objs(self, t, o, margin=0.45):
+    def norm_traj_and_objs(self, t, o, margin=0.40, rotation_degrees=0, rotation_axis=np.array([0,0,1])):
         """
         Normalizes trajectory and object poses to a range of -1 to 1
 
@@ -323,6 +333,10 @@ class LatteServer():
             o_new (array): normalized object poses
             debug_info (array): pts_norm, pts_range/2, vel_norm, vel_range/2, margin
         """
+        rotation_radians = np.radians(rotation_degrees)
+        rotation_vector = rotation_radians * rotation_axis
+        rotation = R.from_rotvec(rotation_vector)
+
         pts_ = np.concatenate([o,t])
 
         vel = pts_[:,3:]
@@ -341,14 +355,16 @@ class LatteServer():
         pts_max = np.max(pts,axis = 0)
         pts_norm = np.max(np.abs(pts_max-pts_min))
 
-        # pts  = ((pts-pts_min)/pts_norm)*(1-margin)+margin/2-0.5
-        pts = ((pts - (pts_max - pts_min)/2) / pts_norm) * (1 - margin)
+        pts  = ((pts - pts_min) / pts_norm) * (1 - margin) + margin / 2 - 0.5
+        # pts = ((pts - (pts_max - pts_min)/2) / pts_norm) * (1 - margin)
 
         pts_new = np.concatenate([pts,vel],axis=-1)
         o_new = pts_new[:o.shape[0],:]
         t_new = pts_new[o.shape[0]:,:]
 
-        return t_new, o_new, [pts_norm, (pts_max-pts_min)/2, vel_norm, (vel_max-vel_min)/2, margin]
+        # return t_new, o_new, [pts_norm, (pts_max-pts_min)/2, vel_norm, (vel_max-vel_min)/2, margin]
+        return t_new, o_new, [pts_norm, pts_min,vel_norm, vel_min, margin,  rotation_degrees,  rotation_axis]
+
             
 def print_help():
     print("""
@@ -387,7 +403,7 @@ if __name__ == "__main__":
             continue
         elif cmd == "m":
             mod_latte = not mod_latte
-            rospy.loginfo("Using mod_latte:", mod_latte)
+            rospy.loginfo(f"Using mod_latte: {mod_latte}")
             continue
         elif cmd == "":
             continue
