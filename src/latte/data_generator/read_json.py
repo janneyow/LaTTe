@@ -46,7 +46,7 @@ with open("/home/janne/ros_ws/latte/src/data/data_latte_100k_obj_list.json", "r"
     obj_list = json.load(f)
     
 # bottle - beer bottle, soda bottle, water bottle, wine bottle
-objects = ["cup", "beer bottle", "laptop"]
+objects = ["plate", "fork", "coffee", "apple", "egg", "cake", "knife"]
 for obj in objects:
     if obj in obj_list:
         print(obj, "in list")

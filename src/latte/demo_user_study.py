@@ -83,7 +83,6 @@ class User_study_interface():
         self.exp_sample_indices = self.exp_sample_indices + samples_inices
 
         self.w = textwrap.TextWrapper(width=60,break_long_words=False,replace_whitespace=False)
-        
         self.init_setup()
 
     def init_setup(self):
@@ -308,6 +307,7 @@ class User_study_interface():
                             "user_answers":self.user_answers,
                             "interaction_text":self.interaction_text
                             }
+            print(data_to_save)
             # data_to_save
             print(self.user_answers)
             with open( os.path.join(user_study_folder, self.user_data["name"]+"_"+self.user_data["age"] +"_"+ datetime.datetime.now().strftime("%Y%m%d-%H%M%S") +'.json'), 'w') as f:
@@ -542,23 +542,23 @@ class User_study_interface():
         self.ani = animation.FuncAnimation(self.fig, self.update, N, fargs=(self.trajs,self.lines[:n_lines], self.tip_marker[:n_lines]), interval=1000/N,cache_frame_data=False, blit=False)
 
 
-X,Y, data = mr.load_dataset(dataset_name, filter_data = True, base_path=base_folder+"../data/")
-X_train, X_test, X_valid, y_train, y_test, y_valid, indices_train, indices_test, indices_val = mr.split_dataset(X, Y, test_size=0.2, val_size=0.1)
-# data_pred = mr.load_data("testpred_100k_latte_f", base_path=data_folder)
-# data_no_language = mr.load_data("test_no_language_100k_latte_f", base_path=data_folder)
-# data_2d = mr.load_data("pred2D_100k_latte_f", base_path=data_folder)
-# data_opposit = []
-# for d_ in data:
-#     d = d_.copy()
-#     traj_in = np.array(d["input_traj"])
-#     traj_out = np.array(d["output_traj"])
-#     delta = traj_out-traj_in
-#     new_traj = traj_in - delta
-#     d["output_traj"] = new_traj.tolist()
-#     data_opposit.append(d)
+# X,Y, data = mr.load_dataset(dataset_name, filter_data = True, base_path=base_folder+"../data/")
+# X_train, X_test, X_valid, y_train, y_test, y_valid, indices_train, indices_test, indices_val = mr.split_dataset(X, Y, test_size=0.2, val_size=0.1)
+# # data_pred = mr.load_data("testpred_100k_latte_f", base_path=data_folder)
+# # data_no_language = mr.load_data("test_no_language_100k_latte_f", base_path=data_folder)
+# # data_2d = mr.load_data("pred2D_100k_latte_f", base_path=data_folder)
+# # data_opposit = []
+# # for d_ in data:
+# #     d = d_.copy()
+# #     traj_in = np.array(d["input_traj"])
+# #     traj_out = np.array(d["output_traj"])
+# #     delta = traj_out-traj_in
+# #     new_traj = traj_in - delta
+# #     d["output_traj"] = new_traj.tolist()
+# #     data_opposit.append(d)
 
 
-# user_study = User_study_interface([data, data_pred, data_no_language, data_2d, data_opposit], dis_names=["Ground Truth", "Ours", "No_language","2D_only","GT opposit"],samples_per_data=5, interaction_samples=5,model=model)
+# # user_study = User_study_interface([data, data_pred, data_no_language, data_2d, data_opposit], dis_names=["Ground Truth", "Ours", "No_language","2D_only","GT opposit"],samples_per_data=5, interaction_samples=5,model=model)
 # user_study = User_study_interface([data], dis_names=["Ground Truth"],samples_per_data=5, interaction_samples=5,model=model)
 
 ##############
@@ -711,4 +711,4 @@ d["output_traj"] = d["input_traj"]
 #                 "obj_poses": obj_poses,"locality_factor": 0.5,"image_paths":None, "change_type":None})
 
 # user_study = User_study_interface([data[:1]], dis_names=["data_pred"],samples_per_data=0, interaction_samples=1, model=model)
-user_study = User_study_interface([[d]], dis_names=["data_pred"],samples_per_data=0, interaction_samples=10, model=model, dev_mode=True)
+user_study = User_study_interface([[d]], dis_names=["data_pred"],samples_per_data=1, interaction_samples=1, model=model, dev_mode=True)
