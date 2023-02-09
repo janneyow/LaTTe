@@ -25,7 +25,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 from lang_corr_msgs.srv import GetEnvObj, GetEnvImage
 from lang_corr_msgs.srv import LatteDeformTraj, LatteDeformTrajResponse
-from lang_corr_msgs.srv import GetFeaturesFromLanguage
+from lang_corr_msgs.srv import GetFeaturesFromLanguage, GetFeaturesFromLanguageRequest
 
 NUM_WAYPTS = 20
 
@@ -124,7 +124,10 @@ class LatteServer():
     def get_most_similar_text(self, text):
         try:
             client_get_features = rospy.ServiceProxy("get_features_from_language", GetFeaturesFromLanguage)
-            resp = client_get_features(text)
+            req = GetFeaturesFromLanguageRequest()
+            req.language_correction = text
+            req.regenerate_corpus = False
+            resp = client_get_features(req)
             text = resp.feature
             if resp.confidence < 0.6:
                 rospy.logwarn("Confidence less than 0.6 : %f" %resp.confidence)
@@ -238,7 +241,7 @@ class LatteServer():
         obj_poses_ = obj_poses_[:,:3]
         
         # Store all data into a dictionary form
-        d = np2data(traj_, self.object_names, obj_poses_, self.text)[0]
+        d = np2data(traj_, self.object_names, obj_poses_, self.text, locality_factor=0.5)[0]
 
         images = None
         if self.use_images:
@@ -293,6 +296,24 @@ class LatteServer():
             ymin = int(ymin)
             ymax = int(ymax)
             images.append(self.img[ymin:ymax, xmin:xmax, :])
+        
+        # temporary hacky solution for human image
+        if "human" in self.object_names:
+            human_idx = self.object_names.index("human")
+        
+            images.pop(human_idx)
+
+            human_img = cv2.imread("/home/janne/ros_ws/ferl/src/latte/docs/media/human.jpg")
+            images.insert(human_idx, human_img)
+        
+        if "bin" in self.object_names:
+            bin_idx = self.object_names.index("bin")
+        
+            images.pop(bin_idx)
+
+            bin_img = cv2.imread("/home/janne/ros_ws/ferl/src/latte/docs/media/bin.jpg")
+            images.insert(bin_idx, bin_img)
+        
         return images
 
     def rescale(self, pts_, factor_list):
@@ -413,7 +434,7 @@ if __name__ == "__main__":
             ls.text = ls.get_most_similar_text(cmd)
             if ls.text is None:
                 ls.text = cmd
-                rospy.logerr("Modded LaTTe not available, please launch sen_sim. Reverting to normal LaTTe")
+                rospy.logerr(f"Modded LaTTe not available, please launch sen_sim. Reverting to normal LaTTe")
         else:
             ls.text = cmd
         

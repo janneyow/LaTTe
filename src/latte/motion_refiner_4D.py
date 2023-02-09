@@ -508,7 +508,7 @@ class Motion_refiner():
 
             # print(sim_mask)
             # print("----------------------------------")
-
+            print("SIMILARITY:", d['similarity'][0])
             sim = pad_array(np.array(d['similarity'][0]),MAX_NUM_OBJS,axis=-1)
             obj_poses = pad_array(np.asarray(d["obj_poses"]),MAX_NUM_OBJS,axis=0)
             # sim = sim_mask
