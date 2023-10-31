@@ -236,8 +236,6 @@ class Motion_refiner():
             similarity_text_image = text_clip_features @ image_features.T
             similarity = similarity_text_image
         else:
-
-
             similarity_text_name = text_clip_features @ obj_names_features.T
             similarity = similarity_text_name
 
@@ -311,10 +309,10 @@ class Motion_refiner():
                 b = lst[i:i + n]
                 classes = [c.split("/")[-2] for c in b]
                 if imgs is None:
-                    images = torch.concat([self.CLIP_preprocess(Image.open(im)).unsqueeze(0) for im in b])
+                    images = torch.cat([self.CLIP_preprocess(Image.open(im)).unsqueeze(0) for im in b])
                 else:
 
-                    images = torch.concat([self.CLIP_preprocess(Image.fromarray(im)).unsqueeze(0) for im in imgs])
+                    images = torch.cat([self.CLIP_preprocess(Image.fromarray(im)).unsqueeze(0) for im in imgs])
 
                 yield classes,images
 
