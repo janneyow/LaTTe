@@ -233,9 +233,11 @@ class Motion_refiner():
             image_features = image_features.astype(np.float32)
             image_features /=  np.linalg.norm(image_features, axis=-1, keepdims=True).astype(np.float32)
 
+            # print("using clip image features")
             similarity_text_image = text_clip_features @ image_features.T
             similarity = similarity_text_image
         else:
+            # print("no image features")
             similarity_text_name = text_clip_features @ obj_names_features.T
             similarity = similarity_text_name
 
@@ -464,7 +466,6 @@ class Motion_refiner():
                     # print(change_img_base[0], change_img_base[1])
             else:
                 image_paths = None
-                
             d['similarity'] = self.compute_clip_similarity(d["obj_names"], [d["text"]], images_path = image_paths, text_feature=clip_text_features[i,np.newaxis], images=images)
             # print(d["obj_names"])
             # print(d['similarity'])
