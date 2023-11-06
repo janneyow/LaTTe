@@ -230,12 +230,19 @@ class Motion_refiner():
             else:
 
                 image_features = self.get_image_features(images_path, imgs=images)
-            image_features = image_features.astype(np.float32)
-            image_features /=  np.linalg.norm(image_features, axis=-1, keepdims=True).astype(np.float32)
+  
+            # If image path is invalid
+            if image_features is None:
+                # use text only
+                similarity_text_name = text_clip_features @ obj_names_features.T
+                similarity = similarity_text_name
+            else:      
+                image_features = image_features.astype(np.float32)
+                image_features /=  np.linalg.norm(image_features, axis=-1, keepdims=True).astype(np.float32)
 
-            # print("using clip image features")
-            similarity_text_image = text_clip_features @ image_features.T
-            similarity = similarity_text_image
+                # print("using clip image features")
+                similarity_text_image = text_clip_features @ image_features.T
+                similarity = similarity_text_image
         else:
             # print("no image features")
             similarity_text_name = text_clip_features @ obj_names_features.T
@@ -313,14 +320,23 @@ class Motion_refiner():
                 if imgs is None:
                     images = torch.cat([self.CLIP_preprocess(Image.open(im)).unsqueeze(0) for im in b])
                 else:
-
-                    images = torch.cat([self.CLIP_preprocess(Image.fromarray(im)).unsqueeze(0) for im in imgs])
-
+                    # display image
+                    # for idx, im in enumerate(imgs):
+                    #     print("GET IMAGE FEATURES:", image_paths)
+                    #     Image.fromarray(im).show()
+                    try:
+                        images = torch.cat([self.CLIP_preprocess(Image.fromarray(im)).unsqueeze(0) for im in imgs])
+                    except AttributeError:
+                        images = None
+                        print("Image could not be loaded")
                 yield classes,images
 
         all_features = []
         with torch.no_grad():
             for classes, images in image_loader(image_paths,bs):
+                if images is None:
+                    print("FAILED")
+                    return None
                 features = self.CLIP_model.encode_image(images.to(self.device))
                 all_features.append(features)
         return torch.cat(all_features).cpu().numpy()
